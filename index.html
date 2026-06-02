@@ -104,25 +104,44 @@
             width: 90%; height: 90%; background: var(--bg-dark); border-radius: 8px; display: flex; flex-direction: row; overflow: hidden; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid var(--border-color);
         }
         .preview-close {
-            position: absolute; top: 15px; right: 15px; font-size: 24px; color: var(--text-muted); cursor: pointer; z-index: 410; transition: 0.2s; background: rgba(0,0,0,0.5); width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
-        }
-        .preview-close:hover { color: #fff; background: rgba(255,50,50,0.8); }
+		position: absolute; top: 15px; right: 15px; font-size: 16px; color: var(--text-muted); cursor: pointer; z-index: 500; transition: 0.2s; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; display: flex; justify-content: center; align-items: center; gap: 6px; border: 1px solid transparent;
+		}
+        .preview-close:hover { color: #fff; background: rgba(255,50,50,0.8); border-color: rgba(255,100,100,0.5); }
         .preview-img-container {
-            flex: 2; background: #080808; display: flex; justify-content: center; align-items: center; position: relative;
+            flex: 2; background: #080808; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;
         }
         #largePreviewImg {
             max-width: 96%; max-height: 96%; object-fit: contain; border-radius: 4px; display: none;
+            cursor: grab; transition: transform 0.1s ease-out; transform-origin: center center;
         }
+        #largePreviewImg:active { cursor: grabbing; }
         .preview-info-panel {
-            flex: 1; min-width: 320px; max-width: 450px; padding: 25px; display: flex; flex-direction: column; background: var(--bg-panel); border-left: 1px solid var(--border-color);
+            flex: 1; min-width: 320px; max-width: 450px; padding: 25px; display: flex; flex-direction: column; background: var(--bg-panel); border-left: 1px solid var(--border-color); z-index: 410;
         }
+        
+        /* 右侧悬浮控制条 - 边框已收窄 */
+        .preview-controls {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: rgba(30, 30, 30, 0.6); backdrop-filter: blur(2px);
+            border: 1px solid var(--border-color); border-radius: 10px; /* 减小圆角 */
+            padding: 5px 5px; /* 收窄内外边距 */ 
+            display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 410;
+        }
+        .preview-controls button {
+            background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; transition: 0.2s;
+        }
+        .preview-controls button:hover { color: var(--primary); }
+        .vertical-slider-wrapper { height: 120px; display: flex; align-items: center; justify-content: center; }
+        .vertical-slider { width: 80px; transform: rotate(-90deg); accent-color: var(--primary); cursor: pointer; }
+        .zoom-text { color: var(--primary); font-size: 12px; font-weight: bold; }
         
         /* 手机端预览响应式 */
         @media (max-width: 768px) {
             .preview-modal-box { flex-direction: column; height: 95%; width: 95%; }
             .preview-img-container { flex: 1.5; min-height: 40%; }
             .preview-info-panel { flex: 1; min-width: auto; max-width: 100%; border-left: none; border-top: 1px solid var(--border-color); padding: 15px; }
-            .preview-close { top: 10px; right: 10px; width: 30px; height: 30px; font-size: 18px; }
+            .preview-close { top: 10px; right: 10px; padding: 6px 12px; font-size: 14px; }
+            .preview-controls { right: 10px; padding: 15px 5px; gap: 15px; }
         }
 
         /* -------------------------------------
@@ -161,7 +180,6 @@
     </header>
     
     <div class="scroll-container" id="mainLayout">
-        <!-- 左侧区域：控制面板 -->
         <div class="layout-left">
             <div class="section">
                 <div class="section-title">模型引擎</div>
@@ -211,7 +229,7 @@
             
             <div class="section">
                 <div class="section-title">智能 Prompt 域</div>
-                <textarea id="promptInput" placeholder="在此输入画面描述... 点击上方参考图可自动插入 @img1 @img2 ..."></textarea>
+                <textarea id="promptInput" placeholder="在此输入画面描述... 点击上方参考图可自动插入 @img1 @img2 ..." style="height: 400px;"></textarea>
                 <div class="tags-container" id="tagsContainer"></div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:5px;">* 右键预设标签可删除，点击高亮并追加</div>
             </div>
@@ -222,21 +240,20 @@
             </div>
         </div>
 
-        <!-- 右侧区域：返图结果 -->
         <div class="layout-right">
             <div class="section" style="margin-bottom:0; display: flex; flex-direction: column; min-height: 100%;">
                 <div class="result-header">
                     <div class="section-title" style="margin:0;">返图结果</div>
                     <div style="display:flex;align-items:center;gap:5px;color:var(--text-muted);font-size:12px;">
                         <i class="fas fa-image"></i>
-                        <input type="range" class="scale-slider" id="gridScale" min="1" max="4" value="2" oninput="adjustGrid()">
+                        <input type="range" class="scale-slider" id="gridScale" min="1" max="4" value="4" oninput="adjustGrid()">
                     </div>
                 </div>
                 <div style="font-size:11px;color:var(--primary);text-align:center;margin-bottom:8px;">
                     <span>部分模型生图耗时较长，可刷新网页后台自动排队</span>
                     <span onclick="clearHistory()" style="margin-left:15px;color:var(--text-muted);cursor:pointer;text-decoration:underline;transition:0.2s;"><i class="fas fa-trash-alt"></i> 清空本地记录</span>
                 </div>
-                <div class="image-grid" id="imageGrid" style="grid-template-columns:repeat(2, 1fr); align-content: start;">
+                <div class="image-grid" id="imageGrid" style="grid-template-columns:repeat(4, 1fr); align-content: start;">
                     <div class="empty-placeholder" id="emptyPlaceholder">等待生成...</div>
                 </div>
             </div>
@@ -270,10 +287,8 @@
         </div>
     </div>
 
-    <!-- 引入 piexifjs 库用于处理 EXIF 信息写入 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.js"></script>
 
-    <!-- 自定义 Confirm Modal 代替系统 confirm() -->
     <div class="modal-overlay" id="confirmModalOverlay" style="z-index: 1000;">
         <div class="modal">
             <h3 style="margin-bottom:15px;color:var(--primary);" id="confirmTitle">确认操作</h3>
@@ -285,14 +300,23 @@
         </div>
     </div>
     
-    <!-- 增强版弹窗预览层 -->
     <div class="modal-overlay" id="imagePreviewOverlay">
         <div class="preview-modal-box">
-            <div class="preview-close" onclick="closePreview()"><i class="fas fa-times"></i></div>
+            <div class="preview-close" onclick="closePreview()">
+                <i class="fas fa-times"></i><span>关闭</span>
+            </div>
             <div class="preview-img-container">
                 <img id="largePreviewImg" src="">
                 <div id="noImgPlaceholder" style="text-align:center;color:var(--text-muted);display:none;">
                     <i class="fas fa-image fa-3x" style="opacity:0.3;margin-bottom:15px;"></i><br>暂无有效图像
+                </div>
+                <div class="preview-controls">
+                    <button title="适应窗口" onclick="resetZoom()"><i class="fas fa-compress"></i></button>
+                    <button title="100% 原始大小" onclick="zoomTo100()"><i class="fas fa-expand"></i></button>
+                    <div class="vertical-slider-wrapper">
+                        <input type="range" class="vertical-slider" id="zoomSlider" min="10" max="300" value="100" oninput="handleZoomSlider()">
+                    </div>
+                    <div class="zoom-text" id="zoomText">100%</div>
                 </div>
             </div>
             <div class="preview-info-panel">
@@ -300,12 +324,13 @@
                     <i class="fas fa-pen-nib"></i> 任务提示词 (Prompt)
                 </h3>
                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
-                    这里记录了该任务提交时的完整提示词。您可自由修改后保存，或一键复制用于下一次创作。
+                    这里记录了该任务提交时的完整提示词。您可一键重画、复制，或将其保存为预设。
                 </div>
                 <textarea id="previewPrompt" style="flex:1; resize:none; font-size:13px; line-height:1.5; padding:12px; border-radius:6px; background:var(--bg-dark);color:var(--text-main);border:1px solid var(--border-color);outline:none;"></textarea>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="primary-btn" onclick="copyPreviewPrompt()" style="flex:1;background:var(--bg-input);color:#fff;"><i class="fas fa-copy"></i> 一键复制</button>
-                    <button class="primary-btn" onclick="savePreviewPrompt()" style="flex:1;"><i class="fas fa-save"></i> 永久保存修改</button>
+                    <button class="primary-btn" onclick="triggerRedraw()" style="flex:1;background:var(--primary);color:#000;"><i class="fas fa-redo"></i> 载入重画</button>
+                    <button class="primary-btn" onclick="copyPreviewPrompt()" style="flex:1;background:var(--bg-input);color:#fff;"><i class="fas fa-copy"></i> 复制</button>
+                    <button class="primary-btn" onclick="saveAsPresetFromPreview()" style="flex:1;background:var(--bg-input);color:#fff;"><i class="fas fa-bookmark"></i> 保存预设</button>
                 </div>
             </div>
         </div>
@@ -369,6 +394,51 @@
     // 安全防护模块 (可随时删除) 结束
     // ==========================================
 
+    // ==========================================
+    // IndexedDB 极简本地数据库 (用于存储含有 Base64 参考图的完整任务)
+    // ==========================================
+    const DB_NAME = 'YaoImageDB';
+    const STORE_NAME = 'HistoryStore';
+
+    // 初始化数据库
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    // 存入数据
+    async function saveToDB(id, data) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.put({ id: id, ...data });
+            request.onsuccess = () => resolve(true);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    // 读取数据
+    async function getFromDB(id) {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.get(id);
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
     const getApiBaseUrl = () => atob('aHR0cHM6Ly9ncnNhaWFwaS5jb20v');
     let refImageList = [];
     let currentSelectedImg = null;
@@ -425,6 +495,43 @@
         {v:'1:2',t:'1:2 (896x1792)'},
         {v:'2:1',t:'2:1 (1792x896)'}
     ];
+
+    // ==========================================
+    // 拖拽缩放变量声明
+    // ==========================================
+    let currentZoom = 100;
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+
+    function updateImageTransform() {
+        const previewImg = document.getElementById('largePreviewImg');
+        if (previewImg) {
+            previewImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom / 100})`;
+        }
+        const zText = document.getElementById('zoomText');
+        if (zText) zText.innerText = `${currentZoom}%`;
+        const zSlider = document.getElementById('zoomSlider');
+        if (zSlider) zSlider.value = currentZoom;
+    }
+
+    function handleZoomSlider() {
+        currentZoom = parseInt(document.getElementById('zoomSlider').value);
+        updateImageTransform();
+    }
+
+    function resetZoom() {
+        currentZoom = 100;
+        translateX = 0;
+        translateY = 0;
+        updateImageTransform();
+    }
+
+    function zoomTo100() {
+        currentZoom = 200; // 设定200%作为放大模拟比例
+        translateX = 0;
+        translateY = 0;
+        updateImageTransform();
+    }
 
     // 自定义 confirm 函数
     function customConfirm(message, onConfirmCallback) {
@@ -494,6 +601,30 @@
             }
         });
         document.addEventListener('paste', handlePaste);
+
+        // 绑定预览图鼠标拖拽漫游及滚轮事件
+        const previewImgElement = document.getElementById('largePreviewImg');
+        if (previewImgElement) {
+            previewImgElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateImageTransform();
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            previewImgElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                currentZoom += e.deltaY > 0 ? -10 : 10;
+                if (currentZoom < 10) currentZoom = 10;
+                if (currentZoom > 500) currentZoom = 500;
+                updateImageTransform();
+            });
+        }
     });
 
     window.addEventListener('resize', () => {
@@ -503,8 +634,8 @@
     function showToast(msg) {
         const toast = document.getElementById('toast');
         toast.innerText = msg;
-        toast.style.background = (msg.includes("失败") || msg.includes("请填写") || msg.includes("错误") || msg.includes("超时")) ? "#ff4d4f" : "var(--primary)";
-        toast.style.color = (msg.includes("失败") || msg.includes("请填写") || msg.includes("错误") || msg.includes("超时")) ? "#fff" : "#000";
+        toast.style.background = (msg.includes("失败") || msg.includes("请填写") || msg.includes("错误") || msg.includes("超时") || msg.includes("为空")) ? "#ff4d4f" : "var(--primary)";
+        toast.style.color = (msg.includes("失败") || msg.includes("请填写") || msg.includes("错误") || msg.includes("超时") || msg.includes("为空")) ? "#fff" : "#000";
         toast.style.opacity = 1;
         setTimeout(() => toast.style.opacity = 0, 2500);
     }
@@ -804,6 +935,7 @@
 
     function openPreview(node) {
         currentPreviewNode = node;
+        resetZoom(); // 打开预览时重置缩放比例
         const url = node.dataset.url;
         const prompt = node.dataset.prompt;
         
@@ -836,38 +968,46 @@
         window.getSelection().removeAllRanges();
     }
 
-    function savePreviewPrompt() {
+    // 新增：保存预览中的提示词为预设
+    function saveAsPresetFromPreview() {
+        const prompt = document.getElementById('previewPrompt').value.trim();
+        if (!prompt) return showToast("提示词为空，无法保存！");
+        
+        // 自动填入新建标签的弹窗
+        document.getElementById('tagContentInput').value = prompt;
+        document.getElementById('tagNameInput').value = ''; 
+        document.getElementById('tagModalOverlay').style.display = 'flex';
+        showToast("请为新预设命名");
+    }
+
+    // 重画逻辑 (从 DB 中恢复)
+    async function triggerRedraw() {
         if (!currentPreviewNode) return;
-        const newPrompt = document.getElementById('previewPrompt').value.trim();
         const targetId = currentPreviewNode.dataset.id;
+        const prompt = document.getElementById('previewPrompt').value;
         
-        currentPreviewNode.dataset.prompt = newPrompt;
+        // 1. 恢复提示词
+        document.getElementById('promptInput').value = prompt;
         
-        let history = JSON.parse(localStorage.getItem('yao_image_history')) || [];
-        let isSavedInHistory = false;
-        history.forEach(item => {
-            if (item.id === targetId || item.url === targetId) {
-                item.prompt = newPrompt;
-                isSavedInHistory = true;
+        // 2. 尝试从 IndexedDB 恢复当时的参考图
+        try {
+            const taskData = await getFromDB(targetId);
+            if (taskData && taskData.images && taskData.images.length > 0) {
+                refImageList = [];
+                taskData.images.forEach((base64, idx) => {
+                    refImageList.push({ id: idx + 1, name: `ref_${idx}.png`, base64: base64 });
+                });
+                renderRefImageList();
+                showToast("提示词与参考图已恢复！");
+            } else {
+                showToast("仅恢复提示词 (未找到相关的参考图记录)");
             }
-        });
-        if (isSavedInHistory) {
-            localStorage.setItem('yao_image_history', JSON.stringify(history));
+        } catch (e) {
+            showToast("仅恢复提示词");
         }
         
-        let activeTasks = JSON.parse(localStorage.getItem('yao_active_tasks')) || [];
-        let isSavedInActive = false;
-        activeTasks.forEach(task => {
-            if (task.id === targetId) {
-                task.prompt = newPrompt;
-                isSavedInActive = true;
-            }
-        });
-        if (isSavedInActive) {
-            localStorage.setItem('yao_active_tasks', JSON.stringify(activeTasks));
-        }
-        
-        showToast("提示词修改已永久保存！");
+        // 3. 关闭预览面板，回到主界面
+        closePreview();
     }
 
     function addActiveTask(taskId, prompt) {
@@ -1095,6 +1235,9 @@
         const imgBase64List = refImageList.map(item => item.base64);
         const payload = { model: model, prompt: prompt, images: imgBase64List, replyType: 'async', aspectRatio: apiRatio };
         if (model.includes('nano-banana')) payload.imageSize = document.getElementById('imageSize').value;
+        
+        // 提前将包含参考图的任务数据存入数据库以防生成阶段报错导致丢失
+        saveToDB(initFakeId, { prompt: prompt, images: imgBase64List });
 
         try {
             const baseUrl = getApiBaseUrl().replace(/\/$/, '');
@@ -1107,6 +1250,9 @@
             
             if (data.id) {
                 skeleton.dataset.id = data.id; 
+                // 请求成功后更新正确的 ID 到 IndexedDB 中
+                saveToDB(data.id, { prompt: prompt, images: imgBase64List });
+                
                 addActiveTask(data.id, prompt);
                 if (data.status === 'succeeded' && data.results && data.results.length > 0) {
                     renderSuccessImage(skeleton, data.results[0].url);
